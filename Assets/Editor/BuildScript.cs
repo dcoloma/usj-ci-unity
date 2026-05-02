@@ -6,15 +6,21 @@ public class BuildScript
 {
     public static void Build()
     {
-        // Disable compression so the build works on GitHub Pages
         PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
+
+        string[] scenes = FindScenesInAssets();
+
+        if (scenes.Length == 0)
+            throw new System.Exception("No .unity scene files found under Assets/");
+
+        Debug.Log($"Building scenes: {string.Join(", ", scenes)}");
 
         BuildPlayerOptions options = new BuildPlayerOptions
         {
-            scenes   = GetEnabledScenes(),
+            scenes           = scenes,
             locationPathName = "build/WebGL/WebGL",
-            target   = BuildTarget.WebGL,
-            options  = BuildOptions.None
+            target           = BuildTarget.WebGL,
+            options          = BuildOptions.None
         };
 
         BuildReport report = BuildPipeline.BuildPlayer(options);
@@ -25,11 +31,12 @@ public class BuildScript
             throw new System.Exception($"Build failed: {report.summary.result}");
     }
 
-    private static string[] GetEnabledScenes()
+    private static string[] FindScenesInAssets()
     {
-        var scenes = new System.Collections.Generic.List<string>();
-        foreach (EditorBuildSettingsScene scene in EditorBuildSettings.scenes)
-            if (scene.enabled) scenes.Add(scene.path);
-        return scenes.ToArray();
+        string[] guids = AssetDatabase.FindAssets("t:Scene", new[] { "Assets" });
+        string[] paths = new string[guids.Length];
+        for (int i = 0; i < guids.Length; i++)
+            paths[i] = AssetDatabase.GUIDToAssetPath(guids[i]);
+        return paths;
     }
 }
